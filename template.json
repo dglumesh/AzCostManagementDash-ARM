@@ -1,0 +1,1115 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {"adminUser": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the username for admin"
+      }
+    },
+         "administratorLoginPassword": {
+            "type": "securestring",
+            "defaultValue": "Password0123!"
+        },
+        "servers_azconsumption_name": {
+            "defaultValue": "azconsumption1",
+            "type": "String"
+        },
+        "sites_AzConsumptionDash_name": {
+            "defaultValue": "AzConsumptionDash1",
+            "type": "String"
+        },
+        "storageAccounts_azfuncstorageaccse_name": {
+            "defaultValue": "azfuncstorageaccse1",
+            "type": "String"
+        },
+        "serverfarms_ASP_CostMangementDashboardRG_9319_name": {
+            "defaultValue": "ASP-CostMangementDashboardRG-93191",
+            "type": "String"
+        },
+        "repoURL": {
+            "type": "string"
+        },
+        "branch": {
+            "type": "string",
+            "defaultValue": "master"
+        },
+    "storageAccountKey": {
+      "type":"string",
+      "metadata":{
+        "description": "Specifies the key of the storage account where the BACPAC file is stored."
+      }
+    }
+    },
+    "variables": {
+        "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', parameters('storageAccounts_azfuncstorageaccse_name'))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Sql/servers",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[parameters('servers_azconsumption_name')]",
+            "location": "southeastasia",
+            "kind": "v12.0",
+            "properties": {
+                "administratorLogin": "[parameters('adminUser')]",
+                "administratorLoginPassword": "[parameters('administratorLoginPassword')]",
+                "version": "12.0",
+                "minimalTlsVersion": "1.2",
+                "publicNetworkAccess": "Enabled",
+                "restrictOutboundNetworkAccess": "Disabled"
+            },
+      "resources": [
+  {
+    "type": "firewallrules",
+    "apiVersion": "2015-05-01-preview",
+    "name": "AllowAllAzureIps",
+    "location": "southeastasia",
+    "dependsOn": [
+      "[parameters('servers_azconsumption_name')]"
+    ],
+    "properties": {
+      "startIpAddress": "0.0.0.0",
+      "endIpAddress": "0.0.0.0"
+    }
+  }
+]
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2021-04-01",
+            "name": "[parameters('storageAccounts_azfuncstorageaccse_name')]",
+            "location": "southeastasia",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "StorageV2",
+            "properties": {
+                "minimumTlsVersion": "TLS1_2",
+                "allowBlobPublicAccess": true,
+                "allowSharedKeyAccess": true,
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "virtualNetworkRules": [],
+                    "ipRules": [],
+                    "defaultAction": "Allow"
+                },
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                    "services": {
+                        "file": {
+                            "keyType": "Account",
+                            "enabled": true
+                        },
+                        "blob": {
+                            "keyType": "Account",
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                },
+                "accessTier": "Hot"
+            }
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2021-01-15",
+            "name": "[parameters('serverfarms_ASP_CostMangementDashboardRG_9319_name')]",
+            "location": "Southeast Asia",
+            "sku": {
+                "name": "Y1",
+                "tier": "Dynamic",
+                "size": "Y1",
+                "family": "Y",
+                "capacity": 0
+            },
+            "kind": "functionapp",
+            "properties": {
+                // "perSiteScaling": false,
+                // "elasticScaleEnabled": false,
+                // "maximumElasticWorkerCount": 1,
+                // "isSpot": false,
+                // "reserved": false,
+                // "isXenon": false,
+                // "hyperV": false,
+                // "targetWorkerCount": 0,
+                // "targetWorkerSizeId": 0
+                "name":"[parameters('serverfarms_ASP_CostMangementDashboardRG_9319_name')]",
+                "computeMode":"Dynamic"
+            }
+        },
+        // {
+        //     "type": "Microsoft.Sql/servers/advisors",
+        //     "apiVersion": "2014-04-01",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/CreateIndex')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "autoExecuteValue": "Disabled"
+        //     }
+        // },
+        // {
+        //     "type": "Microsoft.Sql/servers/advisors",
+        //     "apiVersion": "2014-04-01",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/DbParameterization')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "autoExecuteValue": "Disabled"
+        //     }
+        // },
+        // {
+        //     "type": "Microsoft.Sql/servers/advisors",
+        //     "apiVersion": "2014-04-01",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/DefragmentIndex')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "autoExecuteValue": "Disabled"
+        //     }
+        // },
+        // {
+        //     "type": "Microsoft.Sql/servers/advisors",
+        //     "apiVersion": "2014-04-01",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/DropIndex')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "autoExecuteValue": "Disabled"
+        //     }
+        // },
+        {
+            "type": "Microsoft.Sql/servers/advisors",
+            "apiVersion": "2014-04-01",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/ForceLastGoodPlan')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "autoExecuteValue": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/auditingPolicies",
+            "apiVersion": "2014-04-01",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/Default')]",
+            "location": "Southeast Asia",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "auditingState": "Disabled"
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/auditingSettings",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/Default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "retentionDays": 0,
+                "auditActionsAndGroups": [],
+                "isStorageSecondaryKeyInUse": false,
+                "isAzureMonitorTargetEnabled": false,
+                "state": "Disabled",
+                "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db')]",
+            "location": "southeastasia",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "resources": [
+  {
+    "type": "extensions",
+    "apiVersion": "2014-04-01",
+    "name": "Import",
+    "dependsOn": [
+      "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]"
+    ],
+    "properties": {
+      "storageKeyType": "StorageAccessKey",
+      "storageKey": "[parameters('storageAccountKey')]",
+      "storageUri": "https://azcostmanagemenetbacpac.blob.core.windows.net/sqlbacpac/azure-consumption-sql-db-2021-8-19-12-32.bacpac",
+      "administratorLogin": "[parameters('adminUser')]",
+      "administratorLoginPassword": "[parameters('administratorLoginPassword')]",
+      "operationMode": "Import"
+    }
+  }
+],
+            "sku": {
+                "name": "Basic",
+                "tier": "Basic",
+                "capacity": 5
+            },
+            "kind": "v12.0,user",
+            "properties": {
+                "collation": "SQL_Latin1_General_CP1_CI_AS",
+                "maxSizeBytes": 2147483648,
+                "catalogCollation": "SQL_Latin1_General_CP1_CI_AS",
+                "zoneRedundant": false,
+                "readScale": "Disabled",
+                "requestedBackupStorageRedundancy": "Local",
+                "maintenanceConfigurationId": "/subscriptions/332c4ade-d5c7-430b-addb-832a61605ca2/providers/Microsoft.Maintenance/publicMaintenanceConfigurations/SQL_Default",
+                "isLedgerOn": false
+            }
+        },
+        // {
+        //     "type": "Microsoft.Sql/servers/databases/auditingPolicies",
+        //     "apiVersion": "2014-04-01",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/master/Default')]",
+        //     "location": "Southeast Asia",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "auditingState": "Disabled"
+        //     }
+        // },
+        // {
+        //     "type": "Microsoft.Sql/servers/databases/auditingSettings",
+        //     "apiVersion": "2021-02-01-preview",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/master/Default')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "retentionDays": 0,
+        //         "isAzureMonitorTargetEnabled": false,
+        //         "state": "Disabled",
+        //         "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+        //     }
+        // },
+        // {
+        //     "type": "Microsoft.Sql/servers/databases/extendedAuditingSettings",
+        //     "apiVersion": "2021-02-01-preview",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/master/Default')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "retentionDays": 0,
+        //         "isAzureMonitorTargetEnabled": false,
+        //         "state": "Disabled",
+        //         "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+        //     }
+        // },
+        // {
+        //     "type": "Microsoft.Sql/servers/databases/geoBackupPolicies",
+        //     "apiVersion": "2014-04-01",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/master/Default')]",
+        //     "location": "Southeast Asia",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "state": "Disabled"
+        //     }
+        // },
+        // {
+        //     "type": "Microsoft.Sql/servers/databases/ledgerDigestUploads",
+        //     "apiVersion": "2021-02-01-preview",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/master/Current')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {}
+        // },
+        // {
+        //     "type": "Microsoft.Sql/servers/databases/securityAlertPolicies",
+        //     "apiVersion": "2021-02-01-preview",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/master/Default')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "state": "Disabled",
+        //         "disabledAlerts": [
+        //             ""
+        //         ],
+        //         "emailAddresses": [
+        //             ""
+        //         ],
+        //         "emailAccountAdmins": false,
+        //         "retentionDays": 0
+        //     }
+        // },
+        // {
+        //     "type": "Microsoft.Sql/servers/databases/transparentDataEncryption",
+        //     "apiVersion": "2021-02-01-preview",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/master/Current')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "state": "Disabled"
+        //     }
+        // },
+        // {
+        //     "type": "Microsoft.Sql/servers/databases/vulnerabilityAssessments",
+        //     "apiVersion": "2021-02-01-preview",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/master/Default')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "recurringScans": {
+        //             "isEnabled": false,
+        //             "emailSubscriptionAdmins": true
+        //         }
+        //     }
+        // },
+        {
+            "type": "Microsoft.Sql/servers/devOpsAuditingSettings",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/Default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "isAzureMonitorTargetEnabled": false,
+                "state": "Disabled",
+                "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/encryptionProtector",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/current')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "kind": "servicemanaged",
+            "properties": {
+                "serverKeyName": "ServiceManaged",
+                "serverKeyType": "ServiceManaged",
+                "autoRotationEnabled": false
+            }
+        },
+        // {
+        //     "type": "Microsoft.Sql/servers/extendedAuditingSettings",
+        //     "apiVersion": "2021-02-01-preview",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/Default')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "retentionDays": 0,
+        //         "auditActionsAndGroups": [],
+        //         "isStorageSecondaryKeyInUse": false,
+        //         "isAzureMonitorTargetEnabled": false,
+        //         "state": "Disabled",
+        //         "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+        //     }
+        // },
+        {
+            "type": "Microsoft.Sql/servers/firewallRules",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/AllowAllWindowsAzureIps')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "startIpAddress": "0.0.0.0",
+                "endIpAddress": "0.0.0.0"
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/firewallRules",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/query-editor-63f33c')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "startIpAddress": "112.134.203.150",
+                "endIpAddress": "112.134.203.150"
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/firewallRules",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/query-editor-d986af')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "startIpAddress": "112.134.201.61",
+                "endIpAddress": "112.134.201.61"
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/firewallRules",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/query-editor-e46469')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "startIpAddress": "112.134.206.93",
+                "endIpAddress": "112.134.206.93"
+            }
+        },
+        // {
+        //     "type": "Microsoft.Sql/servers/keys",
+        //     "apiVersion": "2021-02-01-preview",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/ServiceManaged')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "kind": "servicemanaged",
+        //     "properties": {
+        //         "serverKeyType": "ServiceManaged"
+        //     }
+        // },
+        {
+            "type": "Microsoft.Sql/servers/securityAlertPolicies",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/Default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "state": "Disabled",
+                "disabledAlerts": [
+                    ""
+                ],
+                "emailAddresses": [
+                    ""
+                ],
+                "emailAccountAdmins": false,
+                "retentionDays": 0
+            }
+        },
+        // {
+        //     "type": "Microsoft.Sql/servers/vulnerabilityAssessments",
+        //     "apiVersion": "2021-02-01-preview",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/Default')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "recurringScans": {
+        //             "isEnabled": false,
+        //             "emailSubscriptionAdmins": true
+        //         },
+        //         "storageContainerPath": "[parameters('vulnerabilityAssessments_Default_storageContainerPath')]"
+        //     }
+        // },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices",
+            "apiVersion": "2021-04-01",
+            "name": "[concat(parameters('storageAccounts_azfuncstorageaccse_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_azfuncstorageaccse_name'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "properties": {
+                "changeFeed": {
+                    "enabled": false
+                },
+                "restorePolicy": {
+                    "enabled": false
+                },
+                "containerDeleteRetentionPolicy": {
+                    "enabled": true,
+                    "days": 7
+                },
+                "cors": {
+                    "corsRules": []
+                },
+                "deleteRetentionPolicy": {
+                    "enabled": true,
+                    "days": 7
+                },
+                "isVersioningEnabled": false
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices",
+            "apiVersion": "2021-04-01",
+            "name": "[concat(parameters('storageAccounts_azfuncstorageaccse_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_azfuncstorageaccse_name'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "properties": {
+                // "protocolSettings": {
+                //     "smb": {}
+                // },
+                "cors": {
+                    "corsRules": []
+                },
+                "shareDeleteRetentionPolicy": {
+                    "enabled": true,
+                    "days": 7
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/queueServices",
+            "apiVersion": "2021-04-01",
+            "name": "[concat(parameters('storageAccounts_azfuncstorageaccse_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_azfuncstorageaccse_name'))]"
+            ],
+            "properties": {
+                "cors": {
+                    "corsRules": []
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/tableServices",
+            "apiVersion": "2021-04-01",
+            "name": "[concat(parameters('storageAccounts_azfuncstorageaccse_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_azfuncstorageaccse_name'))]"
+            ],
+            "properties": {
+                "cors": {
+                    "corsRules": []
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2021-01-15",
+            "name": "[parameters('sites_AzConsumptionDash_name')]",
+            "location": "Southeast Asia",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_azfuncstorageaccse_name'))]",
+                "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_CostMangementDashboardRG_9319_name'))]"
+            ],
+            "kind": "functionapp",
+            "properties": {
+                "enabled": true,
+                "hostNameSslStates": [
+                    {
+                        "name": "azconsumptiondash.azurewebsites.net",
+                        "sslState": "Disabled",
+                        "hostType": "Standard"
+                    },
+                    {
+                        "name": "azconsumptiondash.scm.azurewebsites.net",
+                        "sslState": "Disabled",
+                        "hostType": "Repository"
+                    }
+                ],
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_CostMangementDashboardRG_9319_name'))]",
+                "reserved": false,
+                "isXenon": false,
+                "hyperV": false,
+                "siteConfig": {
+                    "numberOfWorkers": 1,
+                    "acrUseManagedIdentityCreds": false,
+                    "alwaysOn": false,
+                    "http20Enabled": false,
+                    "functionAppScaleLimit": 200,
+                    "minimumElasticInstanceCount": 0
+                },
+                "scmSiteAlsoStopped": false,
+                "clientAffinityEnabled": false,
+                "clientCertEnabled": false,
+                "clientCertMode": "Required",
+                "hostNamesDisabled": false,
+                "customDomainVerificationId": "7B1095ABBF18132AB0223D667E9F081F4C1BDB17FF8A8677B19216E1A7D5C597",
+                "containerSize": 1536,
+                "dailyMemoryTimeQuota": 0,
+                "keyVaultReferenceIdentity": "SystemAssigned",
+                "httpsOnly": false,
+                "redundancyMode": "None",
+                "storageAccountRequired": false
+            },
+            "resources": [
+                {
+                    "apiVersion": "2015-08-01",
+                    "name": "appsettings",
+                    "type": "config",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/Sites', parameters('sites_AzConsumptionDash_name'))]",
+                        "[resourceId('Microsoft.Web/Sites/sourcecontrols', parameters('sites_AzConsumptionDash_name'), 'web')]",
+                        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_azfuncstorageaccse_name'))]"
+                    ],
+                    "properties": {
+                        "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccounts_azfuncstorageaccse_name'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
+                        "AzureWebJobsDashboard": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccounts_azfuncstorageaccse_name'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
+                        "FUNCTIONS_EXTENSION_VERSION": "~3",
+                        "WEBSITE_CONTENTSHARE" : "[toLower(parameters('sites_AzConsumptionDash_name'))]",
+                        "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING" : "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccounts_azfuncstorageaccse_name'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+                    }
+                },
+                {
+                    "apiVersion": "2018-11-01",
+                    "name": "web",
+                    "type": "sourcecontrols",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/Sites', parameters('sites_AzConsumptionDash_name'))]"
+                        // ,"[concat('Microsoft.Web/Sites/', parameters('sites_AzConsumptionDash_name'), '/config/appsettings')]"
+                    ],
+                    "properties": {
+                        "repoUrl": "[parameters('repoURL')]",
+                        "branch": "[parameters('branch')]",
+                        "IsManualIntegration": true
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
+            "apiVersion": "2021-01-15",
+            "name": "[concat(parameters('sites_AzConsumptionDash_name'), '/ftp')]",
+            "location": "Southeast Asia",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_AzConsumptionDash_name'))]"
+            ],
+            "properties": {
+                "allow": true
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
+            "apiVersion": "2021-01-15",
+            "name": "[concat(parameters('sites_AzConsumptionDash_name'), '/scm')]",
+            "location": "Southeast Asia",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_AzConsumptionDash_name'))]"
+            ],
+            "properties": {
+                "allow": true
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "apiVersion": "2021-01-15",
+            "name": "[concat(parameters('sites_AzConsumptionDash_name'), '/web')]",
+            "location": "Southeast Asia",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_AzConsumptionDash_name'))]"
+            ],
+            "properties": {
+                "numberOfWorkers": 1,
+                "defaultDocuments": [
+                    "Default.htm",
+                    "Default.html",
+                    "Default.asp",
+                    "index.htm",
+                    "index.html",
+                    "iisstart.htm",
+                    "default.aspx",
+                    "index.php"
+                ],
+                "netFrameworkVersion": "v4.0",
+                "phpVersion": "5.6",
+                "requestTracingEnabled": false,
+                "remoteDebuggingEnabled": false,
+                "remoteDebuggingVersion": "VS2019",
+                "httpLoggingEnabled": false,
+                "acrUseManagedIdentityCreds": false,
+                "logsDirectorySizeLimit": 35,
+                "detailedErrorLoggingEnabled": false,
+                "publishingUsername": "$AzConsumptionDash",
+                "azureStorageAccounts": {},
+                // "scmType": "ExternalGit",
+                "use32BitWorkerProcess": true,
+                "webSocketsEnabled": false,
+                "alwaysOn": false,
+                "managedPipelineMode": "Integrated",
+                "virtualApplications": [
+                    {
+                        "virtualPath": "/",
+                        "physicalPath": "site\\wwwroot",
+                        "preloadEnabled": false
+                    }
+                ],
+                "loadBalancing": "LeastRequests",
+                "experiments": {
+                    "rampUpRules": []
+                },
+                "autoHealEnabled": false,
+                "vnetRouteAllEnabled": false,
+                "vnetPrivatePortsCount": 0,
+                "localMySqlEnabled": false,
+                "ipSecurityRestrictions": [
+                    {
+                        "ipAddress": "Any",
+                        "action": "Allow",
+                        "priority": 1,
+                        "name": "Allow all",
+                        "description": "Allow all access"
+                    }
+                ],
+                "scmIpSecurityRestrictions": [
+                    {
+                        "ipAddress": "Any",
+                        "action": "Allow",
+                        "priority": 1,
+                        "name": "Allow all",
+                        "description": "Allow all access"
+                    }
+                ],
+                "scmIpSecurityRestrictionsUseMain": false,
+                "http20Enabled": false,
+                "minTlsVersion": "1.2",
+                "scmMinTlsVersion": "1.0",
+                "ftpsState": "AllAllowed",
+                "preWarmedInstanceCount": 0,
+                "functionAppScaleLimit": 200,
+                "functionsRuntimeScaleMonitoringEnabled": false,
+                "minimumElasticInstanceCount": 0
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2021-01-15",
+            "name": "[concat(parameters('sites_AzConsumptionDash_name'), '/e9799c24b519bf7a97516024e21661df5514f626')]",
+            "location": "Southeast Asia",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_AzConsumptionDash_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "dglumesh@gmail.com",
+                "author": "Lakshan Umesh",
+                "deployer": "GitHub",
+                "message": "Add files via upload",
+                "start_time": "2021-08-17T08:46:54.6236734Z",
+                "end_time": "2021-08-17T08:47:19.1419185Z",
+                "active": true
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/functions",
+            "apiVersion": "2021-01-15",
+            "name": "[concat(parameters('sites_AzConsumptionDash_name'), '/AzureConsumptionFunction')]",
+            "location": "Southeast Asia",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_AzConsumptionDash_name'))]"
+            ],
+            "properties": {
+                "script_root_path_href": "https://azconsumptiondash.azurewebsites.net/admin/vfs/site/wwwroot/AzureConsumptionFunction/",
+                "script_href": "https://azconsumptiondash.azurewebsites.net/admin/vfs/site/wwwroot/bin/AzureConsumptionDashboard.dll",
+                "config_href": "https://azconsumptiondash.azurewebsites.net/admin/vfs/site/wwwroot/AzureConsumptionFunction/function.json",
+                "test_data_href": "https://azconsumptiondash.azurewebsites.net/admin/vfs/data/Functions/sampledata/AzureConsumptionFunction.dat",
+                "href": "https://azconsumptiondash.azurewebsites.net/admin/functions/AzureConsumptionFunction",
+                "config": {},
+                "language": "DotNetAssembly",
+                "isDisabled": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "apiVersion": "2021-01-15",
+            "name": "[concat(parameters('sites_AzConsumptionDash_name'), '/', parameters('sites_AzConsumptionDash_name'), '.azurewebsites.net')]",
+            "location": "Southeast Asia",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_AzConsumptionDash_name'))]"
+            ],
+            "properties": {
+                "siteName": "AzConsumptionDash",
+                "hostNameType": "Verified"
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases/advisors",
+            "apiVersion": "2014-04-01",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/CreateIndex')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "autoExecuteValue": "Disabled"
+            }
+        },
+        // {
+        //     "type": "Microsoft.Sql/servers/databases/advisors",
+        //     "apiVersion": "2014-04-01",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/DbParameterization')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "autoExecuteValue": "Disabled"
+        //     }
+        // },
+        // {
+        //     "type": "Microsoft.Sql/servers/databases/advisors",
+        //     "apiVersion": "2014-04-01",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/DefragmentIndex')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "autoExecuteValue": "Disabled"
+        //     }
+        // },
+        {
+            "type": "Microsoft.Sql/servers/databases/advisors",
+            "apiVersion": "2014-04-01",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/DropIndex')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "autoExecuteValue": "Disabled"
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases/advisors",
+            "apiVersion": "2014-04-01",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/ForceLastGoodPlan')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "autoExecuteValue": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases/auditingPolicies",
+            "apiVersion": "2014-04-01",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/Default')]",
+            "location": "Southeast Asia",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "auditingState": "Disabled"
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases/auditingSettings",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/Default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "retentionDays": 0,
+                "isAzureMonitorTargetEnabled": false,
+                "state": "Disabled",
+                "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+            }
+        },
+        // {
+        //     "type": "Microsoft.Sql/servers/databases/backupLongTermRetentionPolicies",
+        //     "apiVersion": "2021-02-01-preview",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/default')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "weeklyRetention": "PT0S",
+        //         "monthlyRetention": "PT0S",
+        //         "yearlyRetention": "PT0S",
+        //         "weekOfYear": 0
+        //     }
+        // },
+        {
+            "type": "Microsoft.Sql/servers/databases/backupShortTermRetentionPolicies",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "retentionDays": 7
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases/extendedAuditingSettings",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/Default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "retentionDays": 0,
+                "isAzureMonitorTargetEnabled": false,
+                "state": "Disabled",
+                "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases/geoBackupPolicies",
+            "apiVersion": "2014-04-01",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/Default')]",
+            "location": "Southeast Asia",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "state": "Disabled"
+            }
+        },
+        // {
+        //     "type": "Microsoft.Sql/servers/databases/ledgerDigestUploads",
+        //     "apiVersion": "2021-02-01-preview",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/Current')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {}
+        // },
+        {
+            "type": "Microsoft.Sql/servers/databases/securityAlertPolicies",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/Default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "state": "Disabled",
+                "disabledAlerts": [
+                    ""
+                ],
+                "emailAddresses": [
+                    ""
+                ],
+                "emailAccountAdmins": false,
+                "retentionDays": 0
+            }
+        },
+        // {
+        //     "type": "Microsoft.Sql/servers/databases/transparentDataEncryption",
+        //     "apiVersion": "2021-02-01-preview",
+        //     "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/Current')]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+        //         "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+        //     ],
+        //     "properties": {
+        //         "state": "Enabled"
+        //     }
+        // },
+        {
+            "type": "Microsoft.Sql/servers/databases/vulnerabilityAssessments",
+            "apiVersion": "2021-02-01-preview",
+            "name": "[concat(parameters('servers_azconsumption_name'), '/azure-consumption-sql-db/Default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_azconsumption_name'), 'azure-consumption-sql-db')]",
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_azconsumption_name'))]"
+            ],
+            "properties": {
+                "recurringScans": {
+                    "isEnabled": false,
+                    "emailSubscriptionAdmins": true
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "apiVersion": "2021-04-01",
+            "name": "[concat(parameters('storageAccounts_azfuncstorageaccse_name'), '/default/azure-webjobs-hosts')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_azfuncstorageaccse_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_azfuncstorageaccse_name'))]"
+            ],
+            "properties": {
+                "publicAccess": "None",
+                "defaultEncryptionScope": "$account-encryption-key",
+                "denyEncryptionScopeOverride": false
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "apiVersion": "2021-04-01",
+            "name": "[concat(parameters('storageAccounts_azfuncstorageaccse_name'), '/default/azure-webjobs-secrets')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_azfuncstorageaccse_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_azfuncstorageaccse_name'))]"
+            ],
+            "properties": {
+                "publicAccess": "None",
+                "defaultEncryptionScope": "$account-encryption-key",
+                "denyEncryptionScopeOverride": false
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+            "apiVersion": "2021-04-01",
+            "name": "[concat(parameters('storageAccounts_azfuncstorageaccse_name'), '/default/azcon861c')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices', parameters('storageAccounts_azfuncstorageaccse_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_azfuncstorageaccse_name'))]"
+            ],
+            "properties": {
+                "accessTier": "TransactionOptimized",
+                "shareQuota": 5120,
+                "enabledProtocols": "SMB"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+            "apiVersion": "2021-04-01",
+            "name": "[concat(parameters('storageAccounts_azfuncstorageaccse_name'), '/default/azconsumptiondash88c1')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices', parameters('storageAccounts_azfuncstorageaccse_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_azfuncstorageaccse_name'))]"
+            ],
+            "properties": {
+                "accessTier": "TransactionOptimized",
+                "shareQuota": 5120,
+                "enabledProtocols": "SMB"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+            "apiVersion": "2021-04-01",
+            "name": "[concat(parameters('storageAccounts_azfuncstorageaccse_name'), '/default/azconsumptiondashb802')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices', parameters('storageAccounts_azfuncstorageaccse_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_azfuncstorageaccse_name'))]"
+            ],
+            "properties": {
+                "accessTier": "TransactionOptimized",
+                "shareQuota": 5120,
+                "enabledProtocols": "SMB"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+            "apiVersion": "2021-04-01",
+            "name": "[concat(parameters('storageAccounts_azfuncstorageaccse_name'), '/default/contosofuncdasha153')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices', parameters('storageAccounts_azfuncstorageaccse_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_azfuncstorageaccse_name'))]"
+            ],
+            "properties": {
+                "accessTier": "TransactionOptimized",
+                "shareQuota": 5120,
+                "enabledProtocols": "SMB"
+            }
+        }
+    ]
+}
